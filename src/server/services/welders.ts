@@ -179,7 +179,7 @@ export async function getWelder(
       await db`SELECT * FROM certification WHERE welder_id = ${String(
         welder.id
       )}`;
-    // For each certification, fetch endorsements
+    // For each certification, fetch endorsements and primitive details
     const certifications = await Promise.all(
       certificationsRaw.map(async (cert: Record<string, unknown>) => {
         const certEndorsementsRaw =
@@ -194,17 +194,34 @@ export async function getWelder(
             updated_at: e.updated_at as string,
           })
         );
+        // Fetch primitive details
+        let primitive = {
+          id: cert.certification_primitive as string,
+          name: "",
+          type: "",
+          created_at: "",
+          updated_at: "",
+        };
+        if (cert.certification_primitive) {
+          const primitiveArr =
+            await db`SELECT * FROM certifications WHERE id = ${String(
+              cert.certification_primitive
+            )}`;
+          if (primitiveArr[0]) {
+            primitive = {
+              id: primitiveArr[0].id,
+              name: primitiveArr[0].name,
+              type: primitiveArr[0].type,
+              created_at: primitiveArr[0].created_at,
+              updated_at: primitiveArr[0].updated_at,
+            };
+          }
+        }
         return {
           id: cert.id as string,
           certification_id: cert.certification_id as string,
           type: cert.type as CertificationType,
-          certification_primitive: {
-            id: cert.certification_primitive as string,
-            name: "",
-            type: "",
-            created_at: "",
-            updated_at: "",
-          },
+          certification_primitive: primitive,
           level: cert.level as string,
           start_date: cert.start_date as string,
           end_date: cert.end_date as string,

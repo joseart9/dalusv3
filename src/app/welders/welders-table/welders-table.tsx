@@ -60,7 +60,7 @@ export const WeldersTable = ({
       <DataTable
         columns={columns}
         data={data}
-        onRowClick={(row) => router.push(`/welders/edit/${row.id}`)}
+        onRowClick={(row) => router.push(`/welders/welder/${row.id}`)}
       />
       <div className="flex justify-between items-center mt-4">
         <span className="text-sm text-muted-foreground">
