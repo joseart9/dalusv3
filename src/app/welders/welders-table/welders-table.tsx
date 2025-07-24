@@ -38,7 +38,7 @@ export const WeldersTable = ({
   };
 
   return (
-    <>
+    <section className="h-full w-full overflow-x-auto">
       <div className="flex justify-end mb-4">
         <Input
           placeholder="Buscar soldador..."
@@ -83,6 +83,6 @@ export const WeldersTable = ({
           </button>
         </div>
       </div>
-    </>
+    </section>
   );
 };

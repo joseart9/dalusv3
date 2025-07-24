@@ -23,6 +23,7 @@ import {
   ArrowLeft,
   Pencil,
   Trash,
+  TriangleAlert,
 } from "lucide-react";
 import {
   Tooltip,
@@ -36,6 +37,15 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/button";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import {
+  Modal,
+  ModalContent,
+  ModalDescription,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+} from "@/components/modal";
+import { toast } from "sonner";
 
 type Comment = {
   id: string;
@@ -56,6 +66,7 @@ export function WelderViewComponent({ welder }: { welder: Partial<Welder> }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [editingBody, setEditingBody] = useState("");
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   // Fetch comments
   useEffect(() => {
@@ -79,6 +90,17 @@ export function WelderViewComponent({ welder }: { welder: Partial<Welder> }) {
     setComments([res.data.data, ...comments]);
     setNewCommentTitle("");
     setNewCommentBody("");
+  };
+
+  const handleDeleteWelder = async () => {
+    try {
+      await axios.delete("/api/v1/welders", { data: { id: welder.id } });
+      router.push("/welders");
+      toast.success("Soldador eliminado correctamente");
+    } catch (error) {
+      console.error(error);
+      toast.error("Ha ocurrido un error al eliminar el soldador");
+    }
   };
 
   // Edit comment
@@ -148,13 +170,9 @@ export function WelderViewComponent({ welder }: { welder: Partial<Welder> }) {
           isMobile ? "px-1" : "px-0"
         }`}
       >
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => router.back()}
-          aria-label="Volver"
-        >
-          <ArrowLeft className="size-5" />
+        <Button variant="secondary" onClick={() => router.push("/welders")}>
+          <ArrowLeft className="size-4" />
+          Volver
         </Button>
         {welder.id && (
           <Button
@@ -569,7 +587,53 @@ export function WelderViewComponent({ welder }: { welder: Partial<Welder> }) {
             )}
           </CardContent>
         </Card>
+        <div className="flex flex-col gap-2 ml-auto mt-4 bg-red-500/10 p-4 rounded-lg">
+          <div className="flex flex-row gap-2 items-center mb-4">
+            <TriangleAlert className="size-6 text-red-500" />
+            <h1 className="text-lg font-bold">Zona de peligro</h1>
+          </div>
+
+          <div className="flex flex-row gap-2 items-center justify-between">
+            <div className="flex flex-col gap-2">
+              <p className="text-lg font-bold">Eliminar soldador</p>
+              <p className="text-sm text-muted-foreground">
+                Esta acción es irreversible y eliminará el soldador de la base
+                de datos.
+              </p>
+            </div>
+
+            <Button
+              variant="destructive"
+              onClick={() => setIsDeleteModalOpen(true)}
+            >
+              <Trash className="size-4" />
+              Eliminar
+            </Button>
+          </div>
+        </div>
       </div>
+      <Modal open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Eliminar soldador</ModalTitle>
+          </ModalHeader>
+          <ModalDescription>
+            Esta acción es irreversible y eliminará el soldador de la base de
+            datos.
+          </ModalDescription>
+          <ModalFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteModalOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteWelder}>
+              Eliminar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </motion.div>
   );
 }
