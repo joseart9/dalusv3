@@ -28,7 +28,7 @@ export async function createGroup(
     const response =
       await db`INSERT INTO groups (group_id, name, date) VALUES (${
         group.group_id ?? ""
-      }, ${group.name ?? ""}, ${group.date ?? ""}) RETURNING *`;
+      }, ${group.name ?? ""}, ${group.date || null}) RETURNING *`;
     const createdGroup = response[0];
     return { data: createdGroup };
   } catch (error) {
@@ -50,7 +50,7 @@ export async function updateGroup(
     const response =
       await db`UPDATE groups SET updated_at = now(), group_id = ${
         group.group_id ?? ""
-      }, name = ${group.name ?? ""}, date = ${group.date ?? ""} WHERE id = ${
+      }, name = ${group.name ?? ""}, date = ${group.date || null} WHERE id = ${
         group.id
       } RETURNING *`;
     const updatedGroup = response[0];

@@ -19,6 +19,7 @@ export interface Certification {
   end_date: string;
   type: CertificationType;
   endorsements?: Endorsement[];
+  is_active: boolean;
   // Timestamps
   created_at: string;
   updated_at: string;

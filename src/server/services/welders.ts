@@ -3,6 +3,50 @@ import db from "@/supabase/db";
 import { Welder } from "@/app/types/welder";
 import { ServerResponse } from "../types/response";
 import { CertificationType } from "@/app/types/certification";
+import { createGroup } from "./groups";
+
+// Helper function to check if a group exists by name
+async function findGroupByName(name: string): Promise<string | null> {
+  try {
+    const response =
+      await db`SELECT id FROM groups WHERE name = ${name} LIMIT 1`;
+    return response[0]?.id || null;
+  } catch (error) {
+    console.error("Error finding group by name:", error);
+    return null;
+  }
+}
+
+// Helper function to check if a welder already exists by welder_id
+async function findWelderByWelderId(welderId: string): Promise<string | null> {
+  try {
+    const response =
+      await db`SELECT id FROM welders WHERE welder_id = ${welderId} AND is_deleted = false LIMIT 1`;
+    return response[0]?.id || null;
+  } catch (error) {
+    console.error("Error finding welder by welder_id:", error);
+    return null;
+  }
+}
+
+// Helper function to safely handle date values
+function safeDateValue(dateValue: unknown): string | null {
+  if (
+    !dateValue ||
+    dateValue === "" ||
+    dateValue === "null" ||
+    dateValue === "undefined"
+  ) {
+    return null;
+  }
+
+  // If it's already a valid date string, return it
+  if (typeof dateValue === "string" && dateValue.trim() !== "") {
+    return dateValue;
+  }
+
+  return null;
+}
 
 export interface PaginatedResponse<T> {
   data: T[];
@@ -148,6 +192,7 @@ export async function getWelder(
           start_date: cert.start_date as string,
           end_date: cert.end_date as string,
           endorsements,
+          is_active: cert.is_active as boolean,
           created_at: cert.created_at as string,
           updated_at: cert.updated_at as string,
         };
@@ -193,6 +238,18 @@ export async function createWelder(
   }
 
   try {
+    // Check if welder already exists by welder_id (only if welder_id is provided)
+    if (welder.welder_id && welder.welder_id.trim() !== "") {
+      const existingWelder = await findWelderByWelderId(welder.welder_id);
+      if (existingWelder) {
+        return {
+          error:
+            "El soldador con el ID de soldador especificado ya está registrado.",
+          data: {} as Welder,
+        };
+      }
+    }
+
     // 1. Create the welder
     const welderResponse = await db`
       INSERT INTO welders (first_name, middle_name, paternal_last_name, maternal_last_name, email, secondary_email, phone, welder_id, is_active, is_deleted, is_in_waiting_list) VALUES (
@@ -253,7 +310,7 @@ export async function createWelder(
       for (const cert of welder.certifications) {
         // Insert certification (no timestamps, add welder_id)
         const certResponse = await db`
-          INSERT INTO certification (certification_id, type, certification_primitive, level, start_date, end_date, welder_id) VALUES (
+          INSERT INTO certification (certification_id, type, certification_primitive, level, start_date, end_date, welder_id, is_active) VALUES (
             ${cert.certification_id ?? ""},
             ${cert.type ?? ""},
             ${
@@ -263,9 +320,10 @@ export async function createWelder(
                 : cert.certification_primitive || ""
             },
             ${cert.level ?? ""},
-            ${cert.start_date ?? ""},
-            ${cert.end_date ?? ""},
-            ${welderId}
+            ${cert.start_date || null},
+            ${cert.end_date || null},
+            ${welderId},
+            ${cert.is_active ?? false}
           )
           RETURNING id
         `;
@@ -445,8 +503,8 @@ export async function updateWelder(
                 : cert.certification_primitive || ""
             },
             ${cert.level ?? ""},
-            ${cert.start_date ?? ""},
-            ${cert.end_date ?? ""},
+            ${cert.start_date || null},
+            ${cert.end_date || null},
             ${welder.id}
           )
           RETURNING id
@@ -529,6 +587,191 @@ export async function deleteWelder(
       data: {
         message: "Ha ocurrido un error inesperado, contacta al administrador.",
       },
+    };
+  }
+}
+
+export async function createWeldersRaw(
+  welder: Partial<Welder>
+): Promise<ServerResponse<Welder>> {
+  if (!welder.first_name) {
+    return {
+      error: "El nombre es requerido",
+      data: {} as Welder,
+    };
+  }
+
+  try {
+    // Check if welder already exists by welder_id (only if welder_id is provided)
+    if (welder.welder_id && welder.welder_id.trim() !== "") {
+      const existingWelder = await findWelderByWelderId(welder.welder_id);
+      if (existingWelder) {
+        return {
+          error:
+            "El soldador con el ID de soldador especificado ya está registrado.",
+          data: {} as Welder,
+        };
+      }
+    }
+
+    // 1. Create the welder
+    const welderResponse = await db`
+      INSERT INTO welders (first_name, middle_name, paternal_last_name, maternal_last_name, email, secondary_email, phone, welder_id, is_active, is_deleted, is_in_waiting_list) VALUES (
+        ${welder.first_name ?? ""},
+        ${welder.middle_name ?? ""},
+        ${welder.paternal_last_name ?? ""},
+        ${welder.maternal_last_name ?? ""},
+        ${welder.email ?? ""},
+        ${welder.secondary_email ?? ""},
+        ${welder.phone ?? ""},
+        ${welder.welder_id ?? ""},
+        ${welder.is_active ?? false},
+        ${welder.is_deleted ?? false},
+        ${welder.is_in_waiting_list ?? false}
+      )
+      RETURNING id
+    `;
+    const welderId = welderResponse[0]?.id;
+    if (!welderId) {
+      return {
+        error: "Error al crear el soldador",
+        data: {} as Welder,
+      };
+    }
+
+    // 2. Create address if provided
+    if (welder.address) {
+      await db`
+        INSERT INTO address (welder_id, street, number, city, state, country, zip_code) VALUES (
+          ${welderId},
+          ${welder.address?.street ?? ""},
+          ${welder.address?.number ?? ""},
+          ${welder.address?.city ?? ""},
+          ${welder.address?.state ?? ""},
+          ${welder.address?.country ?? ""},
+          ${welder.address?.zip_code ?? ""}
+        )
+        RETURNING *
+      `;
+    }
+
+    // 3. Handle groups - always check by name and create if doesn't exist
+    if (Array.isArray(welder.groups)) {
+      for (const group of welder.groups) {
+        let groupId = null;
+
+        // Always check if group exists by name (ignore the provided id)
+        if (group.name) {
+          // Check if group already exists by name
+          const existingGroupId = await findGroupByName(group.name);
+
+          if (existingGroupId) {
+            groupId = existingGroupId;
+          } else {
+            // Create new group if it doesn't exist
+            const groupResult = await createGroup({
+              group_id: group.group_id,
+              name: group.name,
+              date: group.date,
+            });
+
+            if (groupResult.data && groupResult.data.id) {
+              groupId = groupResult.data.id;
+            } else {
+              console.error("Failed to create group:", groupResult.error);
+              continue; // Skip this group if creation failed
+            }
+          }
+        }
+
+        // Assign group to welder if we have a valid group ID
+        if (groupId) {
+          await db`
+            INSERT INTO "welder-groups" (welder_id, group_id) VALUES (
+              ${welderId},
+              ${groupId}
+            )
+          `;
+        }
+      }
+    }
+
+    // 4. Insert certifications and their endorsements
+    if (Array.isArray(welder.certifications)) {
+      for (const cert of welder.certifications) {
+        // Insert certification (no timestamps, add welder_id)
+        const certResponse = await db`
+          INSERT INTO certification (certification_id, type, certification_primitive, level, start_date, end_date, welder_id, is_active) VALUES (
+            ${cert.certification_id ?? ""},
+            ${cert.type ?? ""},
+            ${
+              cert.certification_primitive &&
+              typeof cert.certification_primitive === "object"
+                ? cert.certification_primitive.id
+                : cert.certification_primitive || ""
+            },
+            ${cert.level ?? ""},
+            ${safeDateValue(cert.start_date)},
+            ${safeDateValue(cert.end_date)},
+            ${welderId},
+            ${cert.is_active ?? false}
+          )
+          RETURNING id
+        `;
+        const certificationId = certResponse[0]?.id;
+        // Insert certification endorsements
+        if (
+          certificationId &&
+          Array.isArray(
+            (cert as unknown as { endorsements?: { name: string }[] })
+              .endorsements
+          )
+        ) {
+          for (const end of (
+            cert as unknown as { endorsements?: { name: string }[] }
+          ).endorsements ?? []) {
+            if (end && end.name) {
+              await db`
+                INSERT INTO endorsement (certification_id, name) VALUES (
+                  ${certificationId},
+                  ${end.name}
+                )
+              `;
+            }
+          }
+        }
+      }
+    }
+
+    // 5. Insert welder endorsements (not certification endorsements)
+    if (
+      Array.isArray(
+        (welder as unknown as { endorsements?: { name: string }[] })
+          .endorsements
+      )
+    ) {
+      for (const end of (
+        welder as unknown as { endorsements?: { name: string }[] }
+      ).endorsements ?? []) {
+        if (end && end.name) {
+          await db`
+            INSERT INTO endorsements (welder_id, name) VALUES (
+              ${welderId},
+              ${end.name}
+            )
+          `;
+        }
+      }
+    }
+
+    return {
+      data: welderResponse[0] as unknown as Welder,
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      error: "Ha ocurrido un error inesperado, contacta al administrador.",
+      data: {} as Welder,
     };
   }
 }

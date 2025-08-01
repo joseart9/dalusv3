@@ -170,7 +170,7 @@ export function WelderViewComponent({ welder }: { welder: Partial<Welder> }) {
           isMobile ? "px-1" : "px-0"
         }`}
       >
-        <Button variant="secondary" onClick={() => router.push("/welders")}>
+        <Button variant="secondary" onClick={() => router.back()}>
           <ArrowLeft className="size-4" />
           Volver
         </Button>

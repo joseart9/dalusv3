@@ -44,6 +44,7 @@ export const CertificationsForm = ({
         try {
           await axiosClient.put(`/certifications`, certificationToUpdate);
           toast.success("Certificación actualizada correctamente");
+          router.refresh();
           router.push("/certifications");
         } catch (error) {
           console.error(error);
@@ -55,6 +56,8 @@ export const CertificationsForm = ({
         try {
           await axiosClient.post("/certifications", certification);
           toast.success("Certificación creada correctamente");
+          router.refresh();
+          router.push("/certifications");
         } catch (error) {
           console.error(error);
           toast.error("Error al crear la certificación");
