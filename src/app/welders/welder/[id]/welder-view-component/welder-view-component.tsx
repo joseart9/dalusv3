@@ -32,7 +32,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/button";
 import { useEffect, useState } from "react";
@@ -152,7 +152,7 @@ export function WelderViewComponent({ welder }: { welder: Partial<Welder> }) {
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "-";
     try {
-      return format(new Date(dateStr), "dd MMM yyyy");
+      return formatInTimeZone(dateStr, "UTC", "dd MMM yyyy");
     } catch {
       return dateStr;
     }
