@@ -158,6 +158,8 @@ export function WelderViewComponent({ welder }: { welder: Partial<Welder> }) {
     }
   };
 
+  console.log(welder);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -339,27 +341,48 @@ export function WelderViewComponent({ welder }: { welder: Partial<Welder> }) {
                     <Card className="border shadow-md p-6 flex flex-col gap-4">
                       <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
                         {/* Left: Main Info */}
-                        <div className="flex flex-col gap-2 min-w-[200px]">
-                          <div className="flex items-center gap-2">
-                            {cert.certification_primitive && (
-                              <span className="flex items-center gap-2 font-bold text-lg">
-                                <BadgeCheck className="size-5 text-blue-500" />
-                                {cert.certification_primitive.name}
-                                <span className="text-xs text-muted-foreground">
-                                  ({cert.certification_primitive.type})
+                        <div className="flex flex-row justify-between w-full">
+                          <div className="flex flex-col gap-2 min-w-[200px]">
+                            <div className="flex items-center gap-2">
+                              {cert.certification_primitive && (
+                                <span className="flex items-center gap-2 font-bold text-lg">
+                                  <BadgeCheck className="size-5 text-blue-500" />
+                                  {cert.certification_primitive.name}
+                                  <span className="text-xs text-muted-foreground">
+                                    ({cert.certification_primitive.type})
+                                  </span>
                                 </span>
+                              )}
+                            </div>
+                            {cert.level && (
+                              <span className="flex items-center gap-2 text-base">
+                                <Star className="size-5 text-yellow-500" />{" "}
+                                <span className="font-semibold">Nivel:</span>{" "}
+                                {cert.level}
                               </span>
                             )}
+                            <span className="flex items-center gap-2 text-base">
+                              <FileText className="size-5 text-muted-foreground" />{" "}
+                              #{cert.certification_id}
+                            </span>
                           </div>
-                          <span className="flex items-center gap-2 text-base">
-                            <Star className="size-5 text-yellow-500" />{" "}
-                            <span className="font-semibold">Nivel:</span>{" "}
-                            {cert.level}
-                          </span>
-                          <span className="flex items-center gap-2 text-base">
-                            <FileText className="size-5 text-muted-foreground" />{" "}
-                            #{cert.certification_id}
-                          </span>
+
+                          <div>
+                            {cert.is_active ? (
+                              <div>
+                                <Badge
+                                  variant="default"
+                                  className="flex items-center gap-1 bg-green-500/80 text-white"
+                                >
+                                  Activa
+                                </Badge>
+                              </div>
+                            ) : (
+                              <div>
+                                <Badge variant="destructive">Vencida</Badge>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                       {cert.endorsements && cert.endorsements.length > 0 && (
@@ -401,8 +424,10 @@ export function WelderViewComponent({ welder }: { welder: Partial<Welder> }) {
                               <span className="font-semibold">Vigencia</span>
                             </div>
                             <div className="pl-7 text-base text-muted-foreground">
-                              {formatDate(cert.start_date)} -{" "}
-                              {formatDate(cert.end_date)}
+                              {cert.start_date
+                                ? formatDate(cert.start_date)
+                                : "N/A"}{" "}
+                              - {formatDate(cert.end_date)}
                             </div>
                           </>
                         ) : (
@@ -410,8 +435,23 @@ export function WelderViewComponent({ welder }: { welder: Partial<Welder> }) {
                             <Clock className="size-5 text-muted-foreground" />
                             <span className="font-semibold">Vigencia:</span>
                             <span>
-                              {formatDate(cert.start_date)} -{" "}
-                              {formatDate(cert.end_date)}
+                              {cert.start_date ? (
+                                formatDate(cert.start_date)
+                              ) : (
+                                <span className="text-sm text-muted-foreground">
+                                  Sin fecha{" "}
+                                </span>
+                              )}
+                              <span className="font-bold text-lg">{" / "}</span>
+                              {cert.end_date ? (
+                                formatDate(cert.end_date)
+                              ) : (
+                                <span>
+                                  <span className="text-sm text-muted-foreground">
+                                    Sin fecha{" "}
+                                  </span>
+                                </span>
+                              )}
                             </span>
                           </div>
                         )}
