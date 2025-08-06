@@ -18,9 +18,15 @@ import {
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/providers/auth-provider";
+import { User } from "@/app/types/users";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  if (pathname === "/login") {
+    return null;
+  }
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -47,7 +53,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         ))}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={ROUTES.user} />
+        <NavUser user={user as User} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

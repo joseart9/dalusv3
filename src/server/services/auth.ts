@@ -7,19 +7,28 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 export async function getUserByEmail(
-  email: string
+  email: string,
+  includePassword: boolean = false
 ): Promise<ServerResponse<Partial<User>>> {
   try {
     const user = await db`SELECT * FROM users WHERE email = ${email}`;
-    return {
-      data: {
-        id: user[0].id,
-        email: user[0].email,
-        first_name: user[0].first_name,
-        last_name: user[0].last_name,
-        role: user[0].role,
-      },
+    if (!user || user.length === 0) {
+      return { data: {} as User, error: "Usuario no encontrado" };
+    }
+
+    const userData: Partial<User> = {
+      id: user[0].id,
+      email: user[0].email,
+      first_name: user[0].first_name,
+      last_name: user[0].last_name,
+      role: user[0].role,
     };
+
+    if (includePassword) {
+      userData.password = user[0].password;
+    }
+
+    return { data: userData };
   } catch (error) {
     console.error(error);
     return { data: {} as User, error: "Failed to get user by email" };
@@ -142,8 +151,8 @@ export async function login(
   email: string,
   password: string
 ): Promise<ServerResponse<LoginResponse>> {
-  const { data: user } = await getUserByEmail(email);
-  if (!user) {
+  const { data: user, error } = await getUserByEmail(email, true);
+  if (error || !user || Object.keys(user).length === 0) {
     return { data: {} as LoginResponse, error: "Usuario no encontrado" };
   }
 
@@ -162,4 +171,19 @@ export async function login(
   });
 
   return { data: { user, token } as LoginResponse };
+}
+
+export async function getUserByToken(
+  token: string
+): Promise<ServerResponse<User>> {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    return { data: {} as User, error: "No JWT secret configured" };
+  }
+  const decoded = jwt.verify(token, secret) as {
+    userId: string;
+    email: string;
+  };
+  const { data: user, error } = await getUserById(decoded.userId);
+  return { data: user, error };
 }

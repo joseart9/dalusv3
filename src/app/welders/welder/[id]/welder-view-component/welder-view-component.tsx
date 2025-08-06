@@ -36,7 +36,6 @@ import { formatInTimeZone } from "date-fns-tz";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/button";
 import { useEffect, useState } from "react";
-import axios from "axios";
 import {
   Modal,
   ModalContent,
@@ -46,6 +45,7 @@ import {
   ModalTitle,
 } from "@/components/modal";
 import { toast } from "sonner";
+import { axiosClient } from "@/lib/axios-client";
 
 type Comment = {
   id: string;
@@ -72,8 +72,8 @@ export function WelderViewComponent({ welder }: { welder: Partial<Welder> }) {
   useEffect(() => {
     if (!welder.id) return;
     setLoadingComments(true);
-    axios
-      .get(`/api/v1/comments?welder_id=${welder.id}`)
+    axiosClient
+      .get(`/comments?welder_id=${welder.id}`)
       .then((res) => setComments(res.data.data || []))
       .finally(() => setLoadingComments(false));
   }, [welder.id]);
@@ -82,7 +82,7 @@ export function WelderViewComponent({ welder }: { welder: Partial<Welder> }) {
   const handleCreateComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCommentTitle.trim() || !newCommentBody.trim() || !welder.id) return;
-    const res = await axios.post("/api/v1/comments", {
+    const res = await axiosClient.post("/comments", {
       welder_id: welder.id,
       title: newCommentTitle.trim(),
       body: newCommentBody.trim(),
@@ -94,9 +94,9 @@ export function WelderViewComponent({ welder }: { welder: Partial<Welder> }) {
 
   const handleDeleteWelder = async () => {
     try {
-      await axios.delete("/api/v1/welders", { data: { id: welder.id } });
-      router.push("/welders");
+      await axiosClient.delete("/welders", { data: { id: welder.id } });
       toast.success("Soldador eliminado correctamente");
+      router.push("/welders");
     } catch (error) {
       console.error(error);
       toast.error("Ha ocurrido un error al eliminar el soldador");
@@ -110,7 +110,7 @@ export function WelderViewComponent({ welder }: { welder: Partial<Welder> }) {
     setEditingBody(body);
   };
   const handleSaveEdit = async (id: string) => {
-    const res = await axios.put("/api/v1/comments", {
+    const res = await axiosClient.put("/comments", {
       id,
       title: editingTitle,
       body: editingBody,
@@ -133,7 +133,7 @@ export function WelderViewComponent({ welder }: { welder: Partial<Welder> }) {
   };
   // Delete comment
   const handleDeleteComment = async (id: string) => {
-    await axios.delete("/api/v1/comments", { data: { id } });
+    await axiosClient.delete("/comments", { data: { id } });
     setComments(comments.filter((c) => c.id !== id));
   };
 

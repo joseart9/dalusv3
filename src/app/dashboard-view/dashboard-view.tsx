@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Users, UserCheck, UserX, Award } from "lucide-react";
+import { Users, UserCheck, UserX, Award, LogOut } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -14,6 +14,8 @@ import {
 } from "recharts";
 import { motion } from "framer-motion";
 import { Stats } from "../types/stats";
+import { useAuth } from "@/providers/auth-provider";
+import { Button } from "@/components/ui/button";
 
 const container = {
   hidden: { opacity: 0 },
@@ -31,6 +33,7 @@ const item = {
 };
 
 export function DashboardView({ data }: { data: Stats }) {
+  const { user, logout } = useAuth();
   const categoryData = [
     { name: "AWS", value: data.welders_aws },
     { name: "IPC", value: data.welders_ipc },
@@ -50,11 +53,30 @@ export function DashboardView({ data }: { data: Stats }) {
         transition={{ duration: 0.3 }}
         className="space-y-8"
       >
-        <div>
-          <h1 className="text-4xl font-bold text-primary mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Resumen de soldadores y certificaciones
-          </p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-4xl font-bold text-primary mb-2">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Resumen de soldadores y certificaciones
+            </p>
+          </div>
+          {user && (
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Bienvenido</p>
+                <p className="font-medium">{user.email}</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={logout}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Cerrar Sesión
+              </Button>
+            </div>
+          )}
         </div>
 
         <motion.div

@@ -10,6 +10,7 @@ import {
 
 export async function POST(request: NextRequest) {
   const comment = await request.json();
+
   const { error, data } = await createComment(comment);
 
   if (error) {
