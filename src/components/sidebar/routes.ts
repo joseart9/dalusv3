@@ -1,4 +1,4 @@
-import { User, UserPlus, List, Home, Users, BadgeCheck } from "lucide-react";
+import { User, UserPlus, Home, Users, BadgeCheck } from "lucide-react";
 
 export const ROUTES = {
   navMain: [
