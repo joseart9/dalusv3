@@ -26,11 +26,11 @@ export const ROUTES = {
           url: "/welders/create",
           icon: UserPlus,
         },
-        {
-          title: "Lista Espera",
-          url: "/welders/waiting-list",
-          icon: List,
-        },
+        // {
+        //   title: "Lista Espera",
+        //   url: "/welders/waiting-list",
+        //   icon: List,
+        // },
       ],
     },
     {
